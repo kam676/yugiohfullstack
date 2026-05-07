@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YGO Vault</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    :root{--bg:#0a0a0f;--bg-s:#13131a;--bg-c:#1a1a24;--border:rgba(255,255,255,0.07);--bh:rgba(255,255,255,0.14);--tp:#f0f0f5;--ts:#8888a0;--tm:#4a4a60;--accent:#c8a84b;--adim:rgba(200,168,75,0.10);--up:#3ecf8e;--down:#f56565;--r:10px;--rl:16px;--fd:'Syne',sans-serif;--fb:'DM Sans',sans-serif;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    html,body{background:var(--bg);color:var(--tp);font-family:var(--fb);font-size:15px;line-height:1.6;min-height:100vh;}
+    a{color:inherit;text-decoration:none;}
+    ::-webkit-scrollbar{width:5px;} ::-webkit-scrollbar-track{background:var(--bg);} ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px;}
+
+    /* AUTH */
+    .auth-screen{display:none;position:fixed;inset:0;background:var(--bg);z-index:500;align-items:center;justify-content:center;}
+    .auth-screen.show{display:flex;}
+    .auth-box{background:var(--bg-c);border:1px solid var(--bh);border-radius:var(--rl);padding:2.5rem;width:100%;max-width:420px;}
+    .auth-logo{font-family:var(--fd);font-size:22px;font-weight:700;color:var(--accent);text-align:center;margin-bottom:.3rem;}
+    .auth-logo span{color:var(--tp);}
+    .auth-tag{text-align:center;font-size:13px;color:var(--tm);margin-bottom:1.8rem;}
+    .auth-title{font-family:var(--fd);font-size:20px;font-weight:700;margin-bottom:1.5rem;}
+    .auth-err{background:rgba(245,101,101,.1);border:1px solid rgba(245,101,101,.3);border-radius:var(--r);padding:10px 14px;font-size:13px;color:var(--down);margin-bottom:1rem;display:none;}
+    .auth-err.show{display:block;}
+    .fg{margin-bottom:1rem;}
+    .fg label{display:block;font-size:12px;color:var(--tm);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;}
+    .fg input{width:100%;background:var(--bg-s);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px;font-family:var(--fb);font-size:14px;color:var(--tp);outline:none;transition:border-color .2s;}
+    .fg input:focus{border-color:var(--accent);}
+    .fg input::placeholder{color:var(--tm);}
+    .auth-sw{text-align:center;font-size:13px;color:var(--tm);margin-top:1.25rem;}
+    .auth-sw a{color:var(--accent);cursor:pointer;}
+
+    /* BUTTONS */
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 22px;border-radius:var(--r);font-family:var(--fb);font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;border:none;}
+    .bp{background:var(--accent);color:#0a0a0f;} .bp:hover{background:#d4b45a;}
+    .bp.w100{width:100%;}
+    .bs{background:transparent;color:var(--tp);border:1px solid var(--bh);} .bs:hover{background:rgba(255,255,255,.05);}
+    .bsm{padding:6px 14px;font-size:13px;}
+    .bg{background:transparent;border:1px solid var(--border);color:var(--ts);font-size:12px;padding:5px 12px;border-radius:6px;cursor:pointer;font-family:var(--fb);}
+    .bg:hover{border-color:var(--bh);color:var(--tp);}
+    .bd{background:transparent;border:1px solid rgba(245,101,101,.3);color:var(--down);font-size:12px;padding:5px 12px;border-radius:6px;cursor:pointer;font-family:var(--fb);}
+    .bd:hover{background:rgba(245,101,101,.1);}
+    .qty-btn{background:transparent;border:1px solid var(--border);border-radius:4px;width:22px;height:22px;cursor:pointer;color:var(--ts);font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .qty-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+    /* NAV */
+    .navbar{position:sticky;top:0;z-index:100;background:rgba(10,10,15,.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 2rem;height:60px;display:flex;align-items:center;justify-content:space-between;}
+    .nav-logo{font-family:var(--fd);font-size:18px;font-weight:700;color:var(--accent);}
+    .nav-logo span{color:var(--tp);}
+    .nav-links{display:flex;align-items:center;gap:2px;list-style:none;}
+    .nav-links a{font-size:13px;font-weight:500;color:var(--ts);padding:6px 14px;border-radius:var(--r);transition:all .2s;cursor:pointer;}
+    .nav-links a:hover,.nav-links a.active{color:var(--tp);background:rgba(255,255,255,.05);}
+    .nav-links a.active{color:var(--accent);}
+    .nav-user{display:flex;align-items:center;gap:10px;}
+    .nav-av{width:32px;height:32px;border-radius:50%;background:var(--adim);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:12px;font-weight:700;color:var(--accent);}
+
+    /* LAYOUT */
+    .page{max-width:980px;margin:0 auto;padding:2.5rem 2rem 4rem;}
+    .pt{font-family:var(--fd);font-size:28px;font-weight:700;margin-bottom:.3rem;}
+    .ps{font-size:14px;color:var(--ts);margin-bottom:2rem;}
+
+    /* STATS */
+    .sg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:1.5rem;}
+    .sc{background:var(--bg-s);border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.2rem;}
+    .sl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);margin-bottom:6px;}
+    .sv{font-family:var(--fd);font-size:22px;font-weight:600;color:var(--tp);}
+    .sv.up{color:var(--up);} .sv.down{color:var(--down);}
+
+    /* SEARCH */
+    .sr{display:flex;gap:10px;margin-bottom:1.25rem;flex-wrap:wrap;}
+    .sw{position:relative;flex:1;min-width:200px;}
+    .sw input{width:100%;background:var(--bg-s);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px 10px 42px;font-family:var(--fb);font-size:14px;color:var(--tp);outline:none;transition:border-color .2s;}
+    .sw input:focus{border-color:var(--accent);}
+    .sw input::placeholder{color:var(--tm);}
+    .si{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--tm);pointer-events:none;}
+    .fsel{background:var(--bg-s);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;font-family:var(--fb);font-size:13px;color:var(--ts);outline:none;cursor:pointer;}
+    .fsel:focus{border-color:var(--accent);}
+
+    /* CARD GRID */
+    .cg{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:14px;}
+    .yc{background:var(--bg-c);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;cursor:pointer;transition:border-color .2s,transform .18s;}
+    .yc:hover{border-color:var(--accent);transform:translateY(-3px);}
+    .yc img{width:100%;aspect-ratio:421/614;object-fit:cover;display:block;background:var(--bg-s);}
+    .yc-body{padding:8px 10px 10px;}
+    .yc-name{font-size:11px;font-weight:500;color:var(--tp);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;}
+    .yc-price{font-family:var(--fd);font-size:13px;font-weight:600;color:var(--accent);}
+
+    /* TABLE */
+    .tw{background:var(--bg-c);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;}
+    .th2{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);}
+    .tt{font-family:var(--fd);font-size:15px;font-weight:600;}
+    table{width:100%;border-collapse:collapse;}
+    thead th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--tm);padding:10px 1.25rem;border-bottom:1px solid var(--border);}
+    tbody tr{border-bottom:1px solid var(--border);transition:background .15s;}
+    tbody tr:last-child{border-bottom:none;}
+    tbody tr:hover{background:rgba(255,255,255,.02);}
+    tbody td{padding:10px 1.25rem;font-size:13px;color:var(--tp);vertical-align:middle;}
+
+    /* MODAL */
+    .mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:300;align-items:center;justify-content:center;padding:1rem;}
+    .mo.open{display:flex;}
+    .md{background:var(--bg-c);border:1px solid var(--bh);border-radius:var(--rl);padding:2rem;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;position:relative;}
+    .mc{position:absolute;top:1rem;right:1rem;background:transparent;border:none;color:var(--tm);font-size:20px;cursor:pointer;}
+    .mc:hover{color:var(--tp);}
+    .mt{font-family:var(--fd);font-size:19px;font-weight:700;margin-bottom:1.5rem;}
+    .badges{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;}
+    .badge{font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid var(--border);color:var(--ts);background:var(--bg-s);}
+
+    /* DECK BUILDER */
+    .dl{display:grid;grid-template-columns:1fr 300px;gap:1.5rem;align-items:start;}
+    .dsb{background:var(--bg-c);border:1px solid var(--border);border-radius:var(--rl);padding:1.25rem;position:sticky;top:80px;}
+    .dcr{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border);}
+    .dcr:last-child{border-bottom:none;}
+    .dcn{flex:1;font-size:12px;color:var(--tp);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .dcq{font-family:var(--fd);font-size:13px;font-weight:600;color:var(--accent);min-width:20px;text-align:center;}
+
+    /* HERO */
+    .hero{background:var(--bg-s);border:1px solid var(--border);border-radius:var(--rl);padding:2.5rem;margin-bottom:2rem;position:relative;overflow:hidden;}
+    .hero::before{content:'';position:absolute;top:-80px;right:-80px;width:260px;height:260px;background:radial-gradient(circle,rgba(200,168,75,.2) 0%,transparent 70%);pointer-events:none;}
+    .hero-t{font-family:var(--fd);font-size:30px;font-weight:700;line-height:1.2;margin-bottom:.6rem;}
+    .hero-t em{font-style:normal;color:var(--accent);}
+    .hero-s{font-size:15px;color:var(--ts);max-width:440px;margin-bottom:1.5rem;}
+    .qg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:2rem;}
+    .qc{background:var(--bg-s);border:1px solid var(--border);border-radius:var(--rl);padding:1.25rem;cursor:pointer;transition:border-color .2s,background .2s;}
+    .qc:hover{border-color:var(--accent);background:var(--adim);}
+    .qi{width:36px;height:36px;background:var(--adim);border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:.75rem;color:var(--accent);}
+    .qt{font-family:var(--fd);font-size:14px;font-weight:600;margin-bottom:3px;}
+    .qs{font-size:12px;color:var(--ts);}
+
+    /* DECKS */
+    .dg{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-bottom:2rem;}
+    .dci{background:var(--bg-c);border:1px solid var(--border);border-radius:var(--rl);padding:1.5rem;cursor:pointer;transition:border-color .2s,transform .18s;}
+    .dci:hover{border-color:var(--accent);transform:translateY(-2px);}
+    .db{height:4px;background:var(--bg-s);border-radius:2px;overflow:hidden;margin-bottom:12px;}
+    .dbf{height:100%;background:var(--accent);border-radius:2px;transition:width .3s;}
+
+    /* CHART */
+    .chart-card{background:var(--bg-c);border:1px solid var(--border);border-radius:var(--rl);padding:1.5rem;margin-bottom:1.5rem;}
+    .range-tabs{display:flex;gap:4px;}
+    .rt{background:transparent;border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-size:12px;color:var(--ts);cursor:pointer;font-family:var(--fb);}
+    .rt.active{border-color:var(--accent);color:var(--accent);}
+
+    /* SUGGESTIONS */
+    .sugg{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--bg-c);border:1px solid var(--bh);border-radius:var(--r);overflow:hidden;z-index:50;box-shadow:0 16px 40px rgba(0,0,0,.5);display:none;}
+    .si-item{padding:10px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:background .15s;}
+    .si-item:hover{background:rgba(255,255,255,.04);}
+    .si-name{font-size:14px;color:var(--tp);}
+    .si-tag{font-size:10px;padding:2px 7px;border-radius:4px;background:var(--adim);color:var(--accent);font-weight:500;}
+
+    /* TOAST */
+    .tw2{position:fixed;bottom:1.5rem;right:1.5rem;z-index:999;display:flex;flex-direction:column;gap:8px;}
+    .toast{background:var(--bg-c);border:1px solid var(--bh);border-radius:var(--r);padding:12px 18px;font-size:13px;color:var(--tp);box-shadow:0 8px 32px rgba(0,0,0,.4);animation:sIn .25s ease;max-width:300px;}
+    .toast.ok{border-color:rgba(62,207,142,.4);color:var(--up);}
+    .toast.err{border-color:rgba(245,101,101,.4);color:var(--down);}
+    @keyframes sIn{from{opacity:0;transform:translateX(16px);}to{opacity:1;transform:translateX(0);}}
+    @keyframes fu{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+    .fu{animation:fu .35s ease forwards;opacity:0;}
+
+    .empty{text-align:center;padding:3rem 1rem;color:var(--tm);}
+    .empty-t{font-family:var(--fd);font-size:16px;font-weight:600;color:var(--ts);margin:.75rem 0 .3rem;}
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="auth-screen show" id="loginScreen">
+  <div class="auth-box">
+    <div class="auth-logo">YGO<span>Vault</span></div>
+    <div class="auth-tag">Your Yu-Gi-Oh! card management system</div>
+    <div class="auth-title">Sign in</div>
+    <div class="auth-err" id="loginErr"></div>
+    <div class="fg"><label>Username</label><input type="text" id="lUser" placeholder="Enter username" /></div>
+    <div class="fg"><label>Password</label><input type="password" id="lPass" placeholder="Enter password" /></div>
+    <button class="btn bp w100" id="loginBtn" style="margin-top:.5rem">Sign in</button>
+    <div class="auth-sw">Don't have an account? <a id="goReg">Create one →</a></div>
+    <div style="margin-top:1rem;padding:10px 14px;background:var(--adim);border-radius:var(--r);font-size:12px;color:var(--ts);text-align:center;">
+      Demo account: <strong style="color:var(--accent)">demo</strong> / <strong style="color:var(--accent)">demo123</strong>
+    </div>
+  </div>
+</div>
+
+<!-- REGISTER -->
+<div class="auth-screen" id="regScreen">
+  <div class="auth-box">
+    <div class="auth-logo">YGO<span>Vault</span></div>
+    <div class="auth-tag">Your Yu-Gi-Oh! card management system</div>
+    <div class="auth-title">Create account</div>
+    <div class="auth-err" id="regErr"></div>
+    <div class="fg"><label>Name</label><input type="text" id="rName" placeholder="Your display name" /></div>
+    <div class="fg"><label>Username</label><input type="text" id="rUser" placeholder="Choose a username" /></div>
+    <div class="fg"><label>Email</label><input type="email" id="rEmail" placeholder="your@email.com" /></div>
+    <div class="fg"><label>Password</label><input type="password" id="rPass" placeholder="At least 6 characters" /></div>
+    <button class="btn bp w100" id="regBtn" style="margin-top:.5rem">Create account</button>
+    <div class="auth-sw">Already have an account? <a id="goLogin">Sign in →</a></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+  <nav class="navbar">
+    <div class="nav-logo">YGO<span>Vault</span></div>
+    <ul class="nav-links" id="navLinks">
+      <li><a data-page="dashboard" class="active">Dashboard</a></li>
+      <li><a data-page="search">Card Search</a></li>
+      <li><a data-page="collection">My Collection</a></li>
+      <li><a data-page="decks">Decks</a></li>
+      <li><a data-page="trends">Price Trends</a></li>
+    </ul>
+    <div class="nav-user">
+      <div class="nav-av" id="navAv"></div>
+      <span style="font-size:13px;color:var(--ts)" id="navName"></span>
+      <button class="bg btn" id="logoutBtn">Sign out</button>
+    </div>
+  </nav>
+
+  <!-- DASHBOARD -->
+  <div id="pg-dashboard" class="page">
+    <div class="hero fu">
+      <div class="hero-t">Welcome back,<br><em id="heroName">Duelist</em></div>
+      <div class="hero-s">Manage your collection, build decks, and track card prices.</div>
+      <div style="display:flex;gap:10px">
+        <button class="btn bp bsm" onclick="nav('collection')">My collection</button>
+        <button class="btn bs bsm" onclick="nav('trends')">Price trends ↗</button>
+      </div>
+    </div>
+    <div class="sg fu" style="animation-delay:.08s">
+      <div class="sc"><div class="sl">Cards owned</div><div class="sv" id="dCards">—</div></div>
+      <div class="sc"><div class="sl">Est. value</div><div class="sv" id="dValue">—</div></div>
+      <div class="sc"><div class="sl">Decks built</div><div class="sv" id="dDecks">—</div></div>
+      <div class="sc"><div class="sl">Unique cards</div><div class="sv" id="dUnique">—</div></div>
+    </div>
+    <div class="qg fu" style="animation-delay:.14s">
+      <div class="qc" onclick="nav('search')"><div class="qi"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7.5" cy="7.5" r="5"/><path d="M12.5 12.5L16 16"/></svg></div><div class="qt">Search cards</div><div class="qs">Browse the full card database</div></div>
+      <div class="qc" onclick="nav('collection')"><div class="qi"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 2h10a1 1 0 011 1v13l-2-1.5L11 16l-2-1.5L7 16l-2-1.5L3 16V3a1 1 0 011-1z"/></svg></div><div class="qt">My collection</div><div class="qs">View and manage your cards</div></div>
+      <div class="qc" onclick="nav('decks')"><div class="qi"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="12" height="9" rx="1"/><path d="M5 5V3a1 1 0 011-1h8a1 1 0 011 1v9"/></svg></div><div class="qt">Build decks</div><div class="qs">Create and manage decklists</div></div>
+    </div>
+    <div class="chart-card fu" style="animation-delay:.2s;margin-bottom:1.5rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+        <div>
+          <div style="font-family:var(--fd);font-size:15px;font-weight:600">Collection value over time</div>
+          <div style="font-size:11px;color:var(--tm);margin-top:2px">Total portfolio value based on TCGPlayer prices</div>
+        </div>
+        <div class="range-tabs">
+          <button class="rt active" id="drt1W" onclick="setDashRange('1W')">1W</button>
+          <button class="rt" id="drt1M" onclick="setDashRange('1M')">1M</button>
+          <button class="rt" id="drt3M" onclick="setDashRange('3M')">3M</button>
+        </div>
+      </div>
+      <div style="position:relative;height:220px"><canvas id="dashChart"></canvas></div>
+      <div id="dashChartEmpty" style="display:none;text-align:center;padding:2rem;color:var(--tm);font-size:13px">
+        No price history yet — look up cards in Price Trends to start building history
+      </div>
+    </div>
+    <div class="tw fu" style="animation-delay:.28s">
+      <div class="th2"><span class="tt">Top cards by value</span><a style="font-size:13px;color:var(--accent);cursor:pointer" onclick="nav('collection')">View all →</a></div>
+      <table><thead><tr><th>Card name</th><th>Type</th><th>Copies</th><th>Total value</th></tr></thead>
+      <tbody id="dRecent"></tbody></table>
+    </div>
+  </div>
+
+  <!-- SEARCH -->
+  <div id="pg-search" class="page" style="display:none">
+    <div class="pt">Card search</div>
+    <div class="ps">Browse the Yu-Gi-Oh! card database and add cards to your collection</div>
+    <div class="sr">
+      <div class="sw"><svg class="si" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7.5" cy="7.5" r="5"/><path d="M12.5 12.5L16 16"/></svg><input type="text" id="csInput" placeholder="Search by card name…" /></div>
+      <select class="fsel" id="csType"><option value="">All types</option><option value="Monster">Monster</option><option value="Spell">Spell</option><option value="Trap">Trap</option></select>
+      <select class="fsel" id="csAttr"><option value="">All attributes</option><option value="DARK">DARK</option><option value="LIGHT">LIGHT</option><option value="EARTH">EARTH</option><option value="WATER">WATER</option><option value="FIRE">FIRE</option><option value="WIND">WIND</option></select>
+    </div>
+    <div style="font-size:13px;color:var(--tm);margin-bottom:1rem" id="csCount"></div>
+    <div class="cg" id="csGrid"><div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--tm)">Search for a card to get started</div></div>
+  </div>
+
+  <!-- COLLECTION -->
+  <div id="pg-collection" class="page" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.3rem">
+      <div class="pt">My collection</div>
+      <button class="btn bp bsm" onclick="nav('search')">+ Add cards</button>
+    </div>
+    <div class="ps">All cards you own</div>
+    <div class="sg">
+      <div class="sc"><div class="sl">Total cards</div><div class="sv" id="cTotal">0</div></div>
+      <div class="sc"><div class="sl">Unique cards</div><div class="sv" id="cUnique">0</div></div>
+      <div class="sc"><div class="sl">Est. value</div><div class="sv" id="cValue">$0.00</div></div>
+      <div class="sc"><div class="sl">Most valuable</div><div class="sv" style="font-size:13px" id="cTop">—</div></div>
+    </div>
+    <div class="sr" style="margin-bottom:1rem">
+      <div class="sw"><svg class="si" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7.5" cy="7.5" r="5"/><path d="M12.5 12.5L16 16"/></svg><input type="text" id="colFilter" placeholder="Filter collection…" /></div>
+    </div>
+    <div class="tw">
+      <table><thead><tr><th>Card name</th><th>Type</th><th>Copies</th><th>Price ea.</th><th>Total</th><th></th></tr></thead>
+      <tbody id="colBody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- DECKS -->
+  <div id="pg-decks" class="page" style="display:none">
+    <div id="decks-list">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.3rem">
+        <div class="pt">My decks</div>
+        <button class="btn bp bsm" id="newDeckBtn">+ New deck</button>
+      </div>
+      <div class="ps">Build and manage your decklists (max 40 cards)</div>
+      <div class="dg" id="decksGrid"></div>
+    </div>
+    <div id="deck-builder" style="display:none">
+      <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem">
+        <button class="btn bg" id="backBtn">← Back</button>
+        <div class="pt" id="dbTitle" style="margin-bottom:0;font-size:22px"></div>
+        <button class="btn bp bsm" id="saveDeckBtn" style="margin-left:auto">Save deck</button>
+      </div>
+      <div class="dl">
+        <div>
+          <div class="ps" style="margin-bottom:.75rem">Search your collection to add cards to this deck</div>
+          <div class="sr" style="margin-bottom:1rem">
+            <div class="sw"><svg class="si" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7.5" cy="7.5" r="5"/><path d="M12.5 12.5L16 16"/></svg><input type="text" id="dbSearch" placeholder="Search your collection…" /></div>
+          </div>
+          <div class="cg" style="grid-template-columns:repeat(auto-fill,minmax(130px,1fr))" id="dbGrid"></div>
+        </div>
+        <div class="dsb">
+          <div style="font-family:var(--fd);font-size:15px;font-weight:600;margin-bottom:.6rem">Deck list</div>
+          <div style="font-size:13px;color:var(--ts);margin-bottom:.4rem"><span id="dbCount">0</span> / 40 cards</div>
+          <div class="db"><div class="dbf" id="dbBar" style="width:0%"></div></div>
+          <div id="dbList"><div style="font-size:13px;color:var(--tm);text-align:center;padding:1.5rem 0">No cards added yet</div></div>
+          <button class="btn bd" style="width:100%;margin-top:1rem;font-size:13px" id="clearDeckBtn">Clear deck</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRICE TRENDS -->
+  <div id="pg-trends" class="page" style="display:none">
+    <div class="pt">Price trends</div>
+    <div class="ps">Search any card to view its live TCGPlayer price history</div>
+    <div class="sw" id="trSW" style="margin-bottom:1.25rem;max-width:500px">
+      <svg class="si" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7.5" cy="7.5" r="5"/><path d="M12.5 12.5L16 16"/></svg>
+      <input type="text" id="trInput" placeholder="Search for a card…" />
+      <div class="sugg" id="trSugg"></div>
+    </div>
+    <div id="trContent">
+      <div class="empty">
+        <svg width="44" height="44" viewBox="0 0 44 44" fill="none" style="margin:0 auto .75rem;display:block"><rect x="8" y="5" width="28" height="34" rx="3" stroke="rgba(255,255,255,0.1)" stroke-width="1.5"/><path d="M14 28L20 20L26 24L34 13" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="34" cy="13" r="2.5" fill="var(--accent)"/></svg>
+        <div class="empty-t">No card selected</div>
+        <p style="font-size:13px">Search for a card above to see its price trend</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CARD DETAIL MODAL -->
+<div class="mo" id="cardModal">
+  <div class="md">
+    <button class="mc" onclick="closeM('cardModal')">✕</button>
+    <div style="display:flex;gap:1.5rem;align-items:flex-start">
+      <img id="mImg" src="" style="width:110px;border-radius:8px;border:1px solid var(--border);flex-shrink:0" />
+      <div style="flex:1">
+        <div style="font-family:var(--fd);font-size:19px;font-weight:700;margin-bottom:8px" id="mName"></div>
+        <div class="badges" id="mBadges"></div>
+        <div style="font-family:var(--fd);font-size:22px;font-weight:700;color:var(--accent);margin-bottom:10px" id="mPrice"></div>
+        <div style="font-size:13px;color:var(--ts);line-height:1.65;margin-bottom:1.25rem" id="mDesc"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap" id="mActions"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NEW DECK MODAL -->
+<div class="mo" id="newDeckModal">
+  <div class="md" style="max-width:380px">
+    <button class="mc" onclick="closeM('newDeckModal')">✕</button>
+    <div class="mt">Create a deck</div>
+    <div class="fg"><label>Deck name</label><input type="text" id="ndName" placeholder="e.g. Blue-Eyes Control" /></div>
+    <div style="display:flex;gap:10px;margin-top:.5rem">
+      <button class="btn bp" id="confirmND">Create</button>
+      <button class="btn bs" onclick="closeM('newDeckModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="tw2" id="toastWrap"></div>
+
+<script>
+/* ── API ── */
+const api = async (url, method='GET', body=null) => {
+  const opts = { method, headers:{'Content-Type':'application/json'} };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(url, opts);
+  return r.json();
+};
+
+/* ── TOAST ── */
+const toast = (msg, type='ok') => {
+  const w = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  w.appendChild(el);
+  setTimeout(()=>el.remove(), 3200);
+};
+
+/* ── MODAL ── */
+const openM  = id => document.getElementById(id).classList.add('open');
+const closeM = id => document.getElementById(id).classList.remove('open');
+document.querySelectorAll('.mo').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+
+/* ── AUTH ── */
+document.getElementById('goReg').addEventListener('click',()=>{ document.getElementById('loginScreen').classList.remove('show'); document.getElementById('regScreen').classList.add('show'); });
+document.getElementById('goLogin').addEventListener('click',()=>{ document.getElementById('regScreen').classList.remove('show'); document.getElementById('loginScreen').classList.add('show'); });
+
+document.getElementById('loginBtn').addEventListener('click', async ()=>{
+  const u=document.getElementById('lUser').value.trim(), p=document.getElementById('lPass').value;
+  const err=document.getElementById('loginErr');
+  if(!u||!p){err.textContent='Please fill in all fields';err.classList.add('show');return;}
+  err.classList.remove('show');
+  const r=await api('/api/login','POST',{username:u,password:p});
+  if(r.error){err.textContent=r.error;err.classList.add('show');}
+  else bootApp(r);
+});
+
+document.getElementById('regBtn').addEventListener('click', async ()=>{
+  const name=document.getElementById('rName').value.trim(), u=document.getElementById('rUser').value.trim(),
+        email=document.getElementById('rEmail').value.trim(), p=document.getElementById('rPass').value;
+  const err=document.getElementById('regErr');
+  if(!name||!u||!email||!p){err.textContent='Please fill in all fields';err.classList.add('show');return;}
+  err.classList.remove('show');
+  const r=await api('/api/register','POST',{name,username:u,email,password:p});
+  if(r.error){err.textContent=r.error;err.classList.add('show');}
+  else bootApp(r);
+});
+
+document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+  await api('/api/logout','POST');
+  document.getElementById('app').style.display='none';
+  document.getElementById('loginScreen').classList.add('show');
+  document.getElementById('lUser').value=''; document.getElementById('lPass').value='';
+});
+
+function bootApp(user){
+  document.getElementById('loginScreen').classList.remove('show');
+  document.getElementById('regScreen').classList.remove('show');
+  document.getElementById('app').style.display='block';
+  document.getElementById('navAv').textContent=user.name[0].toUpperCase();
+  document.getElementById('navName').textContent=user.name;
+  document.getElementById('heroName').textContent=user.name;
+  nav('dashboard');
+}
+
+/* ── Check session on load ── */
+(async()=>{ const r=await api('/api/me'); if(r.logged_in) bootApp(r); })();
+
+/* ── NAV ── */
+function nav(page){
+  document.querySelectorAll('.page').forEach(p=>p.style.display='none');
+  document.querySelectorAll('.nav-links a').forEach(a=>a.classList.toggle('active',a.dataset.page===page));
+  document.getElementById(`pg-${page}`).style.display='block';
+  if(page==='dashboard') loadDashboard();
+  if(page==='collection') loadCollection();
+  if(page==='decks') loadDecksList();
+}
+document.getElementById('navLinks').addEventListener('click',e=>{const a=e.target.closest('a');if(a?.dataset.page)nav(a.dataset.page);});
+
+/* ── DASHBOARD ── */
+let dashChart=null, dashHistory=[], dashRange='1W';
+
+async function loadDashboard(){
+  const d=await api('/api/dashboard');
+  document.getElementById('dCards').textContent=d.total_cards;
+  document.getElementById('dValue').textContent='$'+d.total_value.toFixed(2);
+  document.getElementById('dDecks').textContent=d.deck_count;
+  document.getElementById('dUnique').textContent=d.unique_cards;
+  const tbody=document.getElementById('dRecent');
+  if(!d.recent.length){tbody.innerHTML=`<tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--tm)"><a style="color:var(--accent);cursor:pointer" onclick="nav('search')">Add cards to get started →</a></td></tr>`;}
+  else tbody.innerHTML=d.recent.map(c=>`<tr><td style="font-weight:500">${c.card_name}</td><td style="color:var(--ts);font-size:12px">${c.supertype||'—'}</td><td>${c.quantity}</td><td style="font-family:var(--fd);color:var(--accent)">$${(c.price*c.quantity).toFixed(2)}</td></tr>`).join('');
+  // Load collection trend chart
+  dashHistory=await api('/api/collection/trend');
+  renderDashChart(dashRange);
+}
+
+function setDashRange(range){
+  dashRange=range;
+  ['1W','1M','3M'].forEach(r=>{
+    const el=document.getElementById('drt'+r);
+    if(el) el.classList.toggle('active',r===range);
+  });
+  renderDashChart(range);
+}
+
+function renderDashChart(range){
+  const days={'1W':7,'1M':30,'3M':90}[range]||30;
+  const sliced=dashHistory.slice(-days);
+  const canvas=document.getElementById('dashChart');
+  const emptyEl=document.getElementById('dashChartEmpty');
+  if(!sliced.length){
+    if(canvas) canvas.style.display='none';
+    if(emptyEl) emptyEl.style.display='block';
+    return;
+  }
+  if(canvas) canvas.style.display='block';
+  if(emptyEl) emptyEl.style.display='none';
+  const labels=sliced.map(h=>{ const d=new Date(h.date); return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); });
+  const values=sliced.map(h=>h.value);
+  const first=values[0], last=values[values.length-1];
+  const isUp=last>=first;
+  const accent=isUp?'#3ecf8e':'#f56565';
+  if(dashChart) dashChart.destroy();
+  const ctx=canvas.getContext('2d');
+  dashChart=new Chart(ctx,{
+    type:'line',
+    data:{labels,datasets:[{
+      data:values,borderColor:accent,borderWidth:2,pointRadius:0,
+      pointHoverRadius:4,pointHoverBackgroundColor:accent,tension:0.35,fill:true,
+      backgroundColor:(ctx)=>{
+        const g=ctx.chart.ctx.createLinearGradient(0,0,0,220);
+        g.addColorStop(0,isUp?'rgba(62,207,142,0.13)':'rgba(245,101,101,0.13)');
+        g.addColorStop(1,'rgba(0,0,0,0)'); return g;
+      }
+    }]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{intersect:false,mode:'index'},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'#1a1a24',borderColor:'rgba(255,255,255,.1)',borderWidth:1,
+          titleColor:'#8888a0',bodyColor:'#f0f0f5',bodyFont:{size:13,weight:'600'},padding:10,
+          callbacks:{label:c=>' $'+c.parsed.y.toFixed(2)}
+        }
+      },
+      scales:{
+        x:{grid:{display:false},border:{display:false},ticks:{color:'#4a4a60',font:{size:10},maxTicksLimit:7,maxRotation:0}},
+        y:{position:'right',grid:{color:'rgba(255,255,255,.04)'},border:{display:false},ticks:{color:'#4a4a60',font:{size:10},callback:v=>'$'+v.toFixed(0)}}
+      }
+    }
+  });
+}
+
+/* ── CARD SEARCH ── */
+let csTimer=null;
+document.getElementById('csInput').addEventListener('input',()=>{ clearTimeout(csTimer); csTimer=setTimeout(runSearch,350); });
+document.getElementById('csType').addEventListener('change',runSearch);
+document.getElementById('csAttr').addEventListener('change',runSearch);
+
+async function runSearch(){
+  const q=document.getElementById('csInput').value.trim(), type=document.getElementById('csType').value, attr=document.getElementById('csAttr').value;
+  const grid=document.getElementById('csGrid'), cnt=document.getElementById('csCount');
+  if(!q&&!type&&!attr){grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--tm)">Search for a card to get started</div>`;cnt.textContent='';return;}
+  grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--tm)">Searching…</div>`;
+  const data=await api(`/api/cards/search?q=${encodeURIComponent(q)}&type=${encodeURIComponent(type)}&attribute=${encodeURIComponent(attr)}`);
+  if(!data.length){grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--tm)">No results</div>`;cnt.textContent='';return;}
+  cnt.textContent=`${data.length} result${data.length!==1?'s':''}`;
+  grid.innerHTML='';
+  data.forEach((card,i)=>{
+    const price=card.card_prices?.[0]?.tcgplayer_price;
+    const img=card.card_images?.[0]?.image_url_small||'';
+    const el=document.createElement('div'); el.className='yc fu'; el.style.animationDelay=`${i*.03}s`;
+    el.innerHTML=`<img src="${img}" alt="${card.name}" loading="lazy"/><div class="yc-body"><div class="yc-name">${card.name}</div><div class="yc-price">${price?'$'+parseFloat(price).toFixed(2):'—'}</div></div>`;
+    el.addEventListener('click',()=>openCardDetail(card));
+    grid.appendChild(el);
+  });
+}
+
+function openCardDetail(card){
+  const price=card.card_prices?.[0]?.tcgplayer_price;
+  const img=card.card_images?.[0]?.image_url||card.card_images?.[0]?.image_url_small||'';
+  const badges=[card.type,card.attribute,card.race,card.level?`Level ${card.level}`:null].filter(Boolean);
+  document.getElementById('mImg').src=img;
+  document.getElementById('mName').textContent=card.name;
+  document.getElementById('mPrice').textContent=price?'$'+parseFloat(price).toFixed(2):'Price unavailable';
+  document.getElementById('mDesc').textContent=card.desc||'';
+  document.getElementById('mBadges').innerHTML=badges.map(b=>`<span class="badge">${b}</span>`).join('');
+  const acts=document.getElementById('mActions'); acts.innerHTML='';
+  const ab=document.createElement('button'); ab.className='btn bp bsm'; ab.textContent='+ Add to collection';
+  ab.addEventListener('click',async()=>{ const r=await api('/api/collection/add','POST',{card_name:card.name}); if(r.ok){toast(`"${card.name}" added`);ab.textContent='Added ✓';}else toast(r.error,'err'); });
+  const tb=document.createElement('button'); tb.className='btn bs bsm'; tb.textContent='Price trend';
+  tb.addEventListener('click',()=>{ closeM('cardModal'); loadTrend(card.name); nav('trends'); });
+  acts.appendChild(ab); acts.appendChild(tb);
+  openM('cardModal');
+}
+
+/* ── COLLECTION ── */
+let colData=[];
+async function loadCollection(){
+  colData=await api('/api/collection');
+  renderCollection(document.getElementById('colFilter').value);
+}
+document.getElementById('colFilter').addEventListener('input',e=>renderCollection(e.target.value));
+
+function renderCollection(filter=''){
+  const filtered=filter?colData.filter(c=>c.card_name.toLowerCase().includes(filter.toLowerCase())):colData;
+  const total=colData.reduce((s,c)=>s+c.quantity,0);
+  const value=colData.reduce((s,c)=>s+c.quantity*c.price,0);
+  document.getElementById('cTotal').textContent=total;
+  document.getElementById('cUnique').textContent=colData.length;
+  document.getElementById('cValue').textContent='$'+value.toFixed(2);
+  document.getElementById('cTop').textContent=colData[0]?colData[0].card_name.split(' ').slice(0,3).join(' '):'—';
+  const tbody=document.getElementById('colBody');
+  if(!filtered.length){tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:2.5rem;color:var(--tm)">${filter?'No matching cards':'Collection is empty. <a style="color:var(--accent);cursor:pointer" onclick="nav(\'search\')">Add cards →</a>'}</td></tr>`;return;}
+  tbody.innerHTML=filtered.map((c,i)=>`
+    <tr class="fu" style="animation-delay:${i*.03}s">
+      <td style="font-weight:500">${c.card_name}</td>
+      <td style="color:var(--ts);font-size:12px">${c.supertype||'—'}</td>
+      <td><div style="display:flex;align-items:center;gap:6px">
+        <button class="qty-btn" onclick="updateQty('${c.card_name}',${c.quantity-1})">−</button>
+        <span style="font-family:var(--fd);font-size:14px;font-weight:600">${c.quantity}</span>
+        <button class="qty-btn" onclick="updateQty('${c.card_name}',${c.quantity+1})">+</button>
+      </div></td>
+      <td style="font-family:var(--fd)">$${c.price.toFixed(2)}</td>
+      <td style="font-family:var(--fd);color:var(--accent)">$${(c.price*c.quantity).toFixed(2)}</td>
+      <td><button class="btn bd" onclick="removeCard('${c.card_name}')">Remove</button></td>
+    </tr>`).join('');
+}
+
+async function updateQty(name,qty){
+  await api('/api/collection/update','POST',{card_name:name,quantity:qty});
+  await loadCollection();
+}
+async function removeCard(name){
+  await api('/api/collection/remove','POST',{card_name:name});
+  toast(`"${name}" removed`,'err');
+  await loadCollection();
+}
+
+/* ── DECKS ── */
+let activeDeckId=null, activeDeckCards={};
+
+async function loadDecksList(){
+  document.getElementById('decks-list').style.display='block';
+  document.getElementById('deck-builder').style.display='none';
+  const decks=await api('/api/decks');
+  const grid=document.getElementById('decksGrid'); grid.innerHTML='';
+  if(!decks.length){grid.innerHTML=`<div class="empty"><div class="empty-t">No decks yet</div><p style="font-size:13px">Click "+ New deck" to create one</p></div>`;return;}
+  decks.forEach((deck,i)=>{
+    const pct=Math.min(100,Math.round(deck.total_cards/40*100));
+    const el=document.createElement('div'); el.className='dci fu'; el.style.animationDelay=`${i*.06}s`;
+    el.innerHTML=`<div style="font-family:var(--fd);font-size:16px;font-weight:700;margin-bottom:4px">${deck.deck_name}</div><div style="font-size:13px;color:var(--ts);margin-bottom:10px">${deck.total_cards} / 40 cards</div><div class="db"><div class="dbf" style="width:${pct}%"></div></div><div style="display:flex;gap:8px"><button class="btn bg" onclick="openBuilder(${deck.deck_id},'${deck.deck_name}');event.stopPropagation()">Edit</button><button class="btn bd" onclick="deleteDeck(${deck.deck_id});event.stopPropagation()">Delete</button></div>`;
+    el.addEventListener('click',()=>openBuilder(deck.deck_id,deck.deck_name));
+    grid.appendChild(el);
+  });
+}
+
+document.getElementById('newDeckBtn').addEventListener('click',()=>{ document.getElementById('ndName').value=''; openM('newDeckModal'); });
+document.getElementById('confirmND').addEventListener('click',async()=>{
+  const name=document.getElementById('ndName').value.trim();
+  if(!name){toast('Enter a deck name','err');return;}
+  const r=await api('/api/decks/create','POST',{deck_name:name});
+  if(r.ok){ closeM('newDeckModal'); openBuilder(r.deck_id,name); }
+});
+
+async function deleteDeck(id){ if(!confirm('Delete this deck?'))return; await api(`/api/decks/${id}/delete`,'POST'); loadDecksList(); }
+
+async function openBuilder(deckId, deckName){
+  activeDeckId=deckId;
+  const data=await api(`/api/decks/${deckId}`);
+  activeDeckCards={};
+  data.cards.forEach(c=>{ activeDeckCards[c.card_name]={qty:c.quantity,img:c.image_url,price:c.price}; });
+  document.getElementById('decks-list').style.display='none';
+  document.getElementById('deck-builder').style.display='block';
+  document.getElementById('dbTitle').textContent=deckName;
+  renderDeckSidebar();
+  loadBuilderCollection('');
+  document.getElementById('dbSearch').value='';
+}
+
+document.getElementById('backBtn').addEventListener('click',loadDecksList);
+document.getElementById('dbSearch').addEventListener('input',e=>loadBuilderCollection(e.target.value));
+
+async function loadBuilderCollection(filter){
+  const col=await api('/api/collection');
+  const filtered=filter?col.filter(c=>c.card_name.toLowerCase().includes(filter.toLowerCase())):col;
+  const grid=document.getElementById('dbGrid'); grid.innerHTML='';
+  if(!filtered.length){grid.innerHTML=`<div style="grid-column:1/-1;padding:2rem;color:var(--tm);text-align:center;font-size:13px">${col.length?'No matches':'Collection is empty — <a style="color:var(--accent);cursor:pointer" onclick="nav(\'search\')">add cards first</a>'}</div>`;return;}
+  filtered.forEach((card,i)=>{
+    const inDeck=activeDeckCards[card.card_name]?.qty||0;
+    const el=document.createElement('div'); el.className='yc fu'; el.style.animationDelay=`${i*.025}s`;
+    if(inDeck) el.style.borderColor='var(--accent)';
+    el.innerHTML=`<img src="${card.image_url||''}" alt="${card.card_name}" loading="lazy" style="${!card.image_url?'height:80px;':''}"/><div class="yc-body"><div class="yc-name">${card.card_name}</div><div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px"><span style="font-size:10px;color:var(--tm)">In deck: ${inDeck}</span><button style="background:var(--accent);border:none;border-radius:4px;width:20px;height:20px;cursor:pointer;font-size:13px;font-weight:700;color:#0a0a0f;display:flex;align-items:center;justify-content:center" onclick="addToDeck('${card.card_name}','${card.image_url||''}',${card.price});event.stopPropagation()">+</button></div></div>`;
+    grid.appendChild(el);
+  });
+}
+
+async function addToDeck(name, img, price){
+  const r=await api(`/api/decks/${activeDeckId}/add`,'POST',{card_name:name});
+  if(r.error){toast(r.error,'err');return;}
+  if(!activeDeckCards[name]) activeDeckCards[name]={qty:0,img,price};
+  activeDeckCards[name].qty++;
+  renderDeckSidebar();
+  loadBuilderCollection(document.getElementById('dbSearch').value);
+}
+
+async function removeFromDeck(name){
+  await api(`/api/decks/${activeDeckId}/remove`,'POST',{card_name:name});
+  if(activeDeckCards[name]){
+    activeDeckCards[name].qty--;
+    if(activeDeckCards[name].qty<=0) delete activeDeckCards[name];
+  }
+  renderDeckSidebar();
+  loadBuilderCollection(document.getElementById('dbSearch').value);
+}
+
+document.getElementById('saveDeckBtn').addEventListener('click',()=>{ toast('Deck saved!'); loadDecksList(); });
+document.getElementById('clearDeckBtn').addEventListener('click',async()=>{
+  if(!confirm('Clear all cards?'))return;
+  for(const name of Object.keys(activeDeckCards)){
+    const qty=activeDeckCards[name].qty;
+    for(let i=0;i<qty;i++) await api(`/api/decks/${activeDeckId}/remove`,'POST',{card_name:name});
+  }
+  activeDeckCards={};
+  renderDeckSidebar();
+  loadBuilderCollection('');
+});
+
+function renderDeckSidebar(){
+  const total=Object.values(activeDeckCards).reduce((s,c)=>s+c.qty,0);
+  document.getElementById('dbCount').textContent=total;
+  document.getElementById('dbBar').style.width=Math.min(100,total/40*100)+'%';
+  const list=document.getElementById('dbList');
+  const entries=Object.entries(activeDeckCards);
+  if(!entries.length){list.innerHTML=`<div style="font-size:13px;color:var(--tm);text-align:center;padding:1.5rem 0">No cards added yet</div>`;return;}
+  list.innerHTML=entries.map(([name,c])=>`
+    <div class="dcr">
+      <span class="dcn" title="${name}">${name}</span>
+      <button class="qty-btn" onclick="removeFromDeck('${name}')">−</button>
+      <span class="dcq">${c.qty}</span>
+      <button class="qty-btn" onclick="addToDeck('${name}','${c.img||''}',${c.price})">+</button>
+    </div>`).join('');
+}
+
+/* ── PRICE TRENDS ── */
+let trChart=null, trDebounce=null;
+
+document.getElementById('trInput').addEventListener('input',()=>{ clearTimeout(trDebounce); trDebounce=setTimeout(()=>fetchSuggestions(document.getElementById('trInput').value.trim()),300); });
+document.addEventListener('click',e=>{ if(!document.getElementById('trSW').contains(e.target)) document.getElementById('trSugg').style.display='none'; });
+
+async function fetchSuggestions(q){
+  const box=document.getElementById('trSugg');
+  if(!q||q.length<2){box.style.display='none';return;}
+  const data=await api(`/api/cards/search?q=${encodeURIComponent(q)}`);
+  if(!data.length){box.style.display='none';return;}
+  box.innerHTML=''; box.style.display='block';
+  data.slice(0,7).forEach(card=>{
+    const item=document.createElement('div'); item.className='si-item';
+    const tl=card.type.includes('Monster')?'Monster':card.type.includes('Spell')?'Spell':'Trap';
+    item.innerHTML=`<span class="si-name">${card.name}</span><span class="si-tag">${tl}</span>`;
+    item.addEventListener('click',()=>{ box.style.display='none'; document.getElementById('trInput').value=card.name; loadTrend(card.name); });
+    box.appendChild(item);
+  });
+}
+
+async function loadTrend(cardName){
+  document.getElementById('trContent').innerHTML=`<div style="text-align:center;padding:3rem;color:var(--tm)">Loading price data…</div>`;
+  // Fetch live price (also stores a snapshot)
+  const live=await api(`/api/price/live/${encodeURIComponent(cardName)}`);
+  // Fetch history
+  const history=await api(`/api/price/history/${encodeURIComponent(cardName)}`);
+  if(!history.length){ document.getElementById('trContent').innerHTML=`<div class="empty"><div class="empty-t">No price data</div><p style="font-size:13px">No price history found for this card</p></div>`; return; }
+  renderTrendChart(cardName, live, history, '1M');
+}
+
+function renderTrendChart(cardName, live, history, range){
+  const days={'1W':7,'1M':30,'3M':90}[range]||30;
+  const sliced=history.slice(-days);
+  const prices=sliced.map(h=>h.price);
+  const dates=sliced.map(h=>{ const d=new Date(h.date); return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); });
+  const current=live.tcgplayer_price||prices[prices.length-1];
+  const open=prices[0];
+  const chg=current-open, pct=(chg/open*100);
+  const high=Math.max(...prices,current), low=Math.min(...prices,current);
+  const isUp=chg>=0;
+  const accent=isUp?'#3ecf8e':'#f56565';
+
+  document.getElementById('trContent').innerHTML=`
+    <div class="sg fu">
+      <div class="sc"><div class="sl">Live price</div><div class="sv">$${current.toFixed(2)}</div></div>
+      <div class="sc"><div class="sl">Period change</div><div class="sv ${isUp?'up':'down'}">${isUp?'+':''}${pct.toFixed(1)}%</div></div>
+      <div class="sc"><div class="sl">Period high</div><div class="sv">$${high.toFixed(2)}</div></div>
+      <div class="sc"><div class="sl">Period low</div><div class="sv">$${low.toFixed(2)}</div></div>
+    </div>
+    <div class="chart-card fu" style="animation-delay:.1s">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+        <div>
+          <div style="font-family:var(--fd);font-size:15px;font-weight:600">${cardName}</div>
+          <div style="font-size:11px;color:var(--tm);margin-top:2px">Source: TCGPlayer via YGOPRODeck API — live price snapshots stored in your database</div>
+        </div>
+        <div class="range-tabs">
+          ${['1W','1M','3M'].map(r=>`<button class="rt ${r===range?'active':''}" onclick="renderTrendChart('${cardName}',${JSON.stringify(live)},${JSON.stringify(history)},'${r}')">${r}</button>`).join('')}
+        </div>
+      </div>
+      <div style="position:relative;height:260px"><canvas id="trChart"></canvas></div>
+    </div>
+    <div style="background:var(--bg-c);border:1px solid var(--border);border-radius:var(--rl);padding:1.5rem;display:flex;gap:1.5rem;align-items:flex-start" class="fu" style="animation-delay:.18s">
+      <div style="display:flex;gap:1.5rem">
+        <div><div style="font-size:11px;color:var(--tm);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px">TCGPlayer</div><div style="font-family:var(--fd);font-size:18px;font-weight:700;color:var(--accent)">$${live.tcgplayer_price.toFixed(2)}</div></div>
+        <div><div style="font-size:11px;color:var(--tm);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px">Cardmarket</div><div style="font-family:var(--fd);font-size:18px;font-weight:700;color:var(--ts)">$${live.cardmarket_price.toFixed(2)}</div></div>
+        <div><div style="font-size:11px;color:var(--tm);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px">eBay</div><div style="font-family:var(--fd);font-size:18px;font-weight:700;color:var(--ts)">$${live.ebay_price.toFixed(2)}</div></div>
+      </div>
+    </div>`;
+
+  if(trChart) trChart.destroy();
+  const ctx=document.getElementById('trChart').getContext('2d');
+  trChart=new Chart(ctx,{type:'line',data:{labels:dates,datasets:[{data:prices,borderColor:accent,borderWidth:2,pointRadius:0,pointHoverRadius:4,pointHoverBackgroundColor:accent,tension:0.35,fill:true,backgroundColor:(ctx)=>{const g=ctx.chart.ctx.createLinearGradient(0,0,0,260);g.addColorStop(0,isUp?'rgba(62,207,142,0.13)':'rgba(245,101,101,0.13)');g.addColorStop(1,'rgba(0,0,0,0)');return g;}}]},options:{responsive:true,maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},plugins:{legend:{display:false},tooltip:{backgroundColor:'#1a1a24',borderColor:'rgba(255,255,255,.1)',borderWidth:1,titleColor:'#8888a0',bodyColor:'#f0f0f5',bodyFont:{size:14,weight:'600'},padding:10,callbacks:{label:c=>' $'+c.parsed.y.toFixed(2)}}},scales:{x:{grid:{display:false},border:{display:false},ticks:{color:'#4a4a60',font:{size:11},maxTicksLimit:8,maxRotation:0}},y:{position:'right',grid:{color:'rgba(255,255,255,.04)'},border:{display:false},ticks:{color:'#4a4a60',font:{size:11},callback:v=>'$'+v.toFixed(2)}}}}});
+}
+</script>
+</body>
+</html>
